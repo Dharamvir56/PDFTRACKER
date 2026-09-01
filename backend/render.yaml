@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: pdf-tracker-backend
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        sync: false   # Set this manually in Render dashboard
+      - key: SECRET_KEY
+        generateValue: true   # Render auto-generates a secure random value
+      - key: ALLOWED_ORIGINS
+        sync: false   # Set to your Vercel frontend URL
+      - key: S3_BUCKET
+        sync: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_REGION
+        value: us-east-1
