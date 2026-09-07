@@ -77,6 +77,31 @@ export default function Analytics() {
     return `${mins}m ${secs}s`;
   };
 
+  const getSessionActiveTime = (session: SessionData) => {
+    return session.page_views.reduce(
+      (total, page) => total + Number(page.active_time || 0),
+      0
+    );
+  };
+
+  const formatDateTime = (dateString: string) => {
+    const utcString =
+      dateString.endsWith("Z") || dateString.includes("+")
+        ? dateString
+        : dateString + "Z";
+
+    return new Date(utcString).toLocaleString("en-IN", {
+      timeZone: "Asia/Kolkata",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true,
+    });
+  };
+
   if (!token) return <div className="text-center py-8">Loading...</div>;
 
   if (loading)
@@ -270,10 +295,10 @@ export default function Analytics() {
                       <div>
                         <div className="font-semibold text-gray-900">
                           Started:{" "}
-                          {new Date(session.started_at).toLocaleString()}
+                          {formatDateTime(session.started_at)}
                         </div>
                         <div className="text-sm text-gray-600">
-                          Duration: {formatTime(session.total_active_time)}
+                          Duration: {formatTime(getSessionActiveTime(session))}
                           {session.downloaded && " • Downloaded"}
                         </div>
                       </div>

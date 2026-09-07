@@ -10,8 +10,8 @@ interface PDF {
   created_at: string;
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 export default function AdminDashboard() {
   const [pdfs, setPdfs] = useState<PDF[]>([]);
   const [loading, setLoading] = useState(false);
@@ -55,16 +55,13 @@ export default function AdminDashboard() {
 
       const response = await axios.post(
         `${API_BASE}/api/admin/pdfs/upload`,
-        formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        }
+        formData
       );
 
       setPdfs([response.data, ...pdfs]);
       setSuccessMessage("PDF uploaded successfully!");
       setTimeout(() => setSuccessMessage(""), 3000);
-      
+
       // Reset input
       if (e.target) e.target.value = "";
     } catch (err: any) {

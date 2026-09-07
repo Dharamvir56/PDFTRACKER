@@ -1,10 +1,11 @@
 """
 FastAPI application for PDF tracker
 """
+from sqlalchemy import True_
 from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
 import json
@@ -30,13 +31,21 @@ from utils import save_uploaded_file, generate_tracking_token, calculate_analyti
 init_db()
 
 # Create FastAPI app
-app = FastAPI(title="PDF Tracker API", version="1.0.0")
+app = FastAPI(
+    title="PDF Tracker API",
+    version="1.0.0"
+)
 
-# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
-    allow_credentials=True,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3001",
+        "http://192.168.1.71:3000",
+    ],
+    allow_credentials=True,  
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -236,6 +245,26 @@ async def update_page_view(
     
     return {"success": True}
 
+@app.post("/api/viewer/page-view/{page_view_id}/beacon")
+async def update_page_view_beacon(
+    page_view_id: str,
+    active_time: float,
+    db: Session = Depends(get_db)
+):
+    """Update page view when browser is closing via sendBeacon"""
+    pv = db.query(PageView).filter(PageView.id == page_view_id).first()
+
+    if not pv:
+        raise HTTPException(status_code=404, detail="Page view not found")
+
+    from datetime import datetime
+    pv.exited_at = datetime.utcnow()
+    pv.active_time = active_time
+
+    db.commit()
+
+    return {"success": True}
+
 
 @app.post("/api/viewer/event")
 async def record_event(
@@ -247,15 +276,21 @@ async def record_event(
     session = db.query(DBSession).filter(DBSession.id == session_id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
-    
+
+    # Record the event
     evt = Event(
         session_id=session_id,
         event_type=event.event_type,
         event_data=event.event_data,
     )
     db.add(evt)
+
+    # Mark session as downloaded when download event occurs
+    if event.event_type == "download":
+        session.downloaded = True
+
     db.commit()
-    
+
     return {"success": True}
 
 
@@ -274,7 +309,7 @@ async def end_session(
     from datetime import datetime
     session.ended_at = datetime.utcnow()
     session.total_active_time = total_active_time
-    session.downloaded = downloaded
+    session.downloaded = session.downloaded or downloaded
     db.commit()
     
     return {"success": True}
