@@ -44,6 +44,7 @@ app.add_middleware(
         "http://localhost:3001",
         "http://127.0.0.1:3001",
         "http://192.168.1.71:3000",
+        "https://frontend-sigma-one-77zg7jtsi8.vercel.app",
     ],
     allow_credentials=True,  
     allow_methods=["*"],
